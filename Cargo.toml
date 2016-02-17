@@ -1,0 +1,4 @@
+[package]
+name = "endianness"
+version = "0.1.0"
+authors = ["igor.solovyov <igorsolovyov@me.com>"]
