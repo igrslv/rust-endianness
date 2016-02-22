@@ -13,12 +13,14 @@ pub enum ByteOrder {
 #[derive(Debug,PartialEq)]
 pub enum Error {
     ShortSlice,
+    Other(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::ShortSlice => write!(f, "The slice length is too short to read."),
+            Error::ShortSlice => write!(f, "The slice length is too short."),
+            Error::Other(ref err_string) => write!(f, "{}", err_string),
         }
     }
 }
@@ -26,12 +28,14 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::ShortSlice => "The slice length is too short to read.",
+            Error::ShortSlice => "The slice length is too short.",
+            Error::Other(ref err_string) => err_string,
         }
     }
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             Error::ShortSlice => None,
+            Error::Other(_) => None,
         }
     }
 }
@@ -44,13 +48,17 @@ pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
     } else {
         match endianness {
             ByteOrder::BigEndian => {
-                Ok((data[0] as u16) * 256 + (data[1] as u16))
+                Ok( (data[0] as u16) * 256 + (data[1] as u16) )
             }
             ByteOrder::LittleEndian => {
-                Ok((data[1] as u16) * 256 + (data[0] as u16))
+                Ok( (data[1] as u16) * 256 + (data[0] as u16) )
             }
         }
     }
+}
+
+pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
+    Ok( try!(read_u16(data, endianness)) as i16 )
 }
 
 #[cfg(test)]
@@ -58,17 +66,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn read_u16_should_return_a_correct_u16_integer_for_the_first_two_elements_in_slice() {
-        let big_endian_result = read_u16(&[1, 2], ByteOrder::BigEndian).unwrap();
-        assert_eq!(big_endian_result, 258);
+    fn test_read_u16() {
+        // test readinng for bog and little endianness
+        assert_eq!(258, read_u16(&[1, 2], ByteOrder::BigEndian).unwrap());
+        assert_eq!(513, read_u16(&[1, 2], ByteOrder::LittleEndian).unwrap());
 
-        let little_endian_result = read_u16(&[1, 2], ByteOrder::LittleEndian).unwrap();
-        assert_eq!(little_endian_result, 513);
+        // it should return an error type if the size of slice is less than two
+        assert_eq!(Error::ShortSlice, read_u16(&[], ByteOrder::BigEndian).unwrap_err());
+        assert_eq!(Error::ShortSlice, read_u16(&[], ByteOrder::LittleEndian).unwrap_err());
     }
 
     #[test]
-    fn read_u16_should_return_an_error_type_if_there_are_less_than_two_elements_in_slice() {
-        let result = read_u16(&[1], ByteOrder::BigEndian).unwrap_err();
-        assert_eq!(result, Error::ShortSlice);
+    fn test_read_i16() {
+        // test readinng for bog and little endianness
+        assert_eq!(511, read_i16(&[1, 255], ByteOrder::BigEndian).unwrap());
+        assert_eq!(-255, read_i16(&[1, 255], ByteOrder::LittleEndian).unwrap());
+
+        assert_eq!(-255, read_i16(&[255, 1], ByteOrder::BigEndian).unwrap());
+        assert_eq!(511, read_i16(&[255, 1], ByteOrder::LittleEndian).unwrap());
+
+        assert_eq!(-1, read_i16(&[255, 255], ByteOrder::BigEndian).unwrap());
+        assert_eq!(-1, read_i16(&[255, 255], ByteOrder::LittleEndian).unwrap());
+
+        assert_eq!(-32768, read_i16(&[128, 0], ByteOrder::BigEndian).unwrap());
+        assert_eq!(-32768, read_i16(&[0, 128], ByteOrder::LittleEndian).unwrap());
+
+        // it should return an error type if the size of slice is less than two
+        assert_eq!(Error::ShortSlice, read_i16(&[], ByteOrder::BigEndian).unwrap_err());
+        assert_eq!(Error::ShortSlice, read_i16(&[], ByteOrder::LittleEndian).unwrap_err());
     }
 }
