@@ -67,32 +67,19 @@ mod tests {
 
     #[test]
     fn test_read_u16() {
-        // test readinng for bog and little endianness
-        assert_eq!(258, read_u16(&[1, 2], ByteOrder::BigEndian).unwrap());
-        assert_eq!(513, read_u16(&[1, 2], ByteOrder::LittleEndian).unwrap());
+        assert_eq!(read_u16(&[1, 2], ByteOrder::BigEndian).unwrap(), read_u16(&[2, 1], ByteOrder::LittleEndian).unwrap());
 
-        // it should return an error type if the size of slice is less than two
         assert_eq!(Error::ShortSlice, read_u16(&[], ByteOrder::BigEndian).unwrap_err());
         assert_eq!(Error::ShortSlice, read_u16(&[], ByteOrder::LittleEndian).unwrap_err());
     }
 
     #[test]
     fn test_read_i16() {
-        // test readinng for bog and little endianness
-        assert_eq!(511, read_i16(&[1, 255], ByteOrder::BigEndian).unwrap());
-        assert_eq!(-255, read_i16(&[1, 255], ByteOrder::LittleEndian).unwrap());
-
-        assert_eq!(-255, read_i16(&[255, 1], ByteOrder::BigEndian).unwrap());
-        assert_eq!(511, read_i16(&[255, 1], ByteOrder::LittleEndian).unwrap());
-
-        assert_eq!(-1, read_i16(&[255, 255], ByteOrder::BigEndian).unwrap());
-        assert_eq!(-1, read_i16(&[255, 255], ByteOrder::LittleEndian).unwrap());
-
-        assert_eq!(-32768, read_i16(&[128, 0], ByteOrder::BigEndian).unwrap());
-        assert_eq!(128, read_i16(&[128, 0], ByteOrder::LittleEndian).unwrap());
-
-        assert_eq!(128, read_i16(&[0, 128], ByteOrder::BigEndian).unwrap());
-        assert_eq!(-32768, read_i16(&[0, 128], ByteOrder::LittleEndian).unwrap());
+        assert_eq!(read_i16(&[1, 255], ByteOrder::BigEndian).unwrap(), read_i16(&[255, 1], ByteOrder::LittleEndian).unwrap());
+        assert_eq!(read_i16(&[255, 1], ByteOrder::BigEndian).unwrap(), read_i16(&[1, 255], ByteOrder::LittleEndian).unwrap());
+        assert_eq!(read_i16(&[255, 255], ByteOrder::BigEndian).unwrap(), read_i16(&[255, 255], ByteOrder::LittleEndian).unwrap());
+        assert_eq!(read_i16(&[128, 0], ByteOrder::BigEndian).unwrap(), read_i16(&[0, 128], ByteOrder::LittleEndian).unwrap());
+        assert_eq!(read_i16(&[0, 128], ByteOrder::BigEndian).unwrap(), read_i16(&[128, 0], ByteOrder::LittleEndian).unwrap());
 
         // it should return an error type if the size of slice is less than two
         assert_eq!(Error::ShortSlice, read_i16(&[], ByteOrder::BigEndian).unwrap_err());
