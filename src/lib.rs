@@ -89,6 +89,9 @@ mod tests {
         assert_eq!(-1, read_i16(&[255, 255], ByteOrder::LittleEndian).unwrap());
 
         assert_eq!(-32768, read_i16(&[128, 0], ByteOrder::BigEndian).unwrap());
+        assert_eq!(128, read_i16(&[128, 0], ByteOrder::LittleEndian).unwrap());
+
+        assert_eq!(128, read_i16(&[0, 128], ByteOrder::BigEndian).unwrap());
         assert_eq!(-32768, read_i16(&[0, 128], ByteOrder::LittleEndian).unwrap());
 
         // it should return an error type if the size of slice is less than two
