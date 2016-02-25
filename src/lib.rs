@@ -4,9 +4,9 @@ use std::result;
 
 #[derive(Debug)]
 pub enum ByteOrder {
-    /// Intel byte order
+    // Intel byte order
     LittleEndian,
-    /// Motorola byte order
+    // Motorola byte order
     BigEndian,
 }
 
@@ -48,10 +48,10 @@ pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
     } else {
         match endianness {
             ByteOrder::BigEndian => {
-                Ok( (data[0] as u16) * 256 + (data[1] as u16) )
+                Ok( ((data[0] as u16) << 8) + (data[1] as u16) )
             }
             ByteOrder::LittleEndian => {
-                Ok( (data[1] as u16) * 256 + (data[0] as u16) )
+                Ok( ((data[1] as u16) << 8) + (data[0] as u16) )
             }
         }
     }
@@ -63,26 +63,86 @@ pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // Macro to test that all of the functions return an error type
+    // when given a slice that is too short.
+    macro_rules! short_slice {
+        ($name:ident, $read:ident) => (
+            mod $name {
+                use {ByteOrder, Error, $read};
 
-    #[test]
-    fn test_read_u16() {
-        assert_eq!(read_u16(&[1, 2], ByteOrder::BigEndian).unwrap(), read_u16(&[2, 1], ByteOrder::LittleEndian).unwrap());
+                #[test]
+                fn read_big_endian() {
+                    assert_eq!(Error::ShortSlice, $read(&[], ByteOrder::BigEndian).unwrap_err());
+                }
 
-        assert_eq!(Error::ShortSlice, read_u16(&[], ByteOrder::BigEndian).unwrap_err());
-        assert_eq!(Error::ShortSlice, read_u16(&[], ByteOrder::LittleEndian).unwrap_err());
+                #[test]
+                fn read_little_endian() {
+                    assert_eq!(Error::ShortSlice, $read(&[], ByteOrder::LittleEndian).unwrap_err());
+                }
+            }
+        )
     }
 
-    #[test]
-    fn test_read_i16() {
-        assert_eq!(read_i16(&[1, 255], ByteOrder::BigEndian).unwrap(), read_i16(&[255, 1], ByteOrder::LittleEndian).unwrap());
-        assert_eq!(read_i16(&[255, 1], ByteOrder::BigEndian).unwrap(), read_i16(&[1, 255], ByteOrder::LittleEndian).unwrap());
-        assert_eq!(read_i16(&[255, 255], ByteOrder::BigEndian).unwrap(), read_i16(&[255, 255], ByteOrder::LittleEndian).unwrap());
-        assert_eq!(read_i16(&[128, 0], ByteOrder::BigEndian).unwrap(), read_i16(&[0, 128], ByteOrder::LittleEndian).unwrap());
-        assert_eq!(read_i16(&[0, 128], ByteOrder::BigEndian).unwrap(), read_i16(&[128, 0], ByteOrder::LittleEndian).unwrap());
+    short_slice!(short_u16, read_u16);
+    short_slice!(short_i16, read_i16);
 
-        // it should return an error type if the size of slice is less than two
-        assert_eq!(Error::ShortSlice, read_i16(&[], ByteOrder::BigEndian).unwrap_err());
-        assert_eq!(Error::ShortSlice, read_i16(&[], ByteOrder::LittleEndian).unwrap_err());
+    // A macro to perform generative testing using the following invariant:
+    // for any integer N that was transmuted to a stream of bytes read functions must return N.
+    macro_rules! read_correctness {
+        ($name:ident, $ty_int:ty, $bytes: expr, $read:ident, $max:expr) => {
+            mod $name {
+                use std::mem;
+                use {ByteOrder, $read};
+
+                extern crate quickcheck;
+                extern crate rand;
+                use self::quickcheck::{QuickCheck, StdGen, Testable};
+
+                #[test]
+                fn read_big_endian() {
+                    #[cfg(target_endian = "little")]
+                    fn prop(n: $ty_int) -> bool {
+                        let mut data = unsafe { mem::transmute::<_, [u8; $bytes]>(n as $ty_int) };
+                        data.reverse();
+                        n == $read(&data, ByteOrder::BigEndian).unwrap()
+                    }
+
+                    #[cfg(target_endian = "big")]
+                    fn prop(n: $ty_int) -> bool {
+                        let data = unsafe { mem::transmute::<_, [u8; $bytes]>(n as $ty_int) };
+                        n == $read(&data, ByteOrder::BigEndian).unwrap()
+                    }
+
+                    self::quick_check(prop as fn($ty_int) -> bool);
+                }
+
+                #[test]
+                fn read_little_endian() {
+                    #[cfg(target_endian = "little")]
+                    fn prop(n: $ty_int) -> bool {
+                        let data = unsafe { mem::transmute::<_, [u8; $bytes]>(n as $ty_int) };
+                        n == $read(&data, ByteOrder::LittleEndian).unwrap()
+                    }
+
+                    #[cfg(target_endian = "big")]
+                    fn prop(n: $ty_int) -> bool {
+                        let mut data = unsafe { mem::transmute::<_, [u8; $bytes]>(n as $ty_int) };
+                        data.reverse();
+                        n == $read(&data, ByteOrder::LittleEndian).unwrap()
+                    }
+
+                    self::quick_check(prop as fn($ty_int) -> bool);
+                }
+
+                fn quick_check<T: Testable>(prop: T) {
+                    QuickCheck::new()
+                        .gen(StdGen::new(rand::thread_rng(), $max as usize))
+                        .quickcheck(prop);
+                }
+            }
+        }
     }
+
+    read_correctness!(test_u16, u16, 2, read_u16, ::std::u16::MAX);
+    read_correctness!(test_i16, i16, 2, read_i16, ::std::i16::MAX);
 }

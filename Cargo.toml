@@ -2,3 +2,7 @@
 name = "endianness"
 version = "0.1.0"
 authors = ["igor.solovyov <igorsolovyov@me.com>"]
+
+[dev-dependencies]
+quickcheck = "0.2"
+rand = "0.3"
