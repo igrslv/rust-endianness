@@ -61,10 +61,35 @@ pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
     Ok( try!(read_u16(data, endianness)) as i16 )
 }
 
+pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
+    if data.len() < 4 {
+        Err(Error::ShortSlice)
+    } else {
+        match endianness {
+            ByteOrder::BigEndian => {
+                Ok(
+                    ( (data[0] as u32) << 24 ) + ( (data[1] as u32) << 16 ) +
+                    ( (data[2] as u32) << 8 ) + (data[3] as u32)
+                )
+            }
+            ByteOrder::LittleEndian => {
+                Ok(
+                    ( (data[3] as u32) << 24 ) + ( (data[2] as u32) << 16 ) +
+                    ( (data[1] as u32) << 8 ) + (data[0] as u32)
+                )
+            }
+        }
+    }
+}
+
+pub fn read_i32(data: &[u8], endianness: ByteOrder) -> Result<i32> {
+    Ok( try!(read_u32(data, endianness)) as i32 )
+}
+
 #[cfg(test)]
 mod tests {
     // Macro to test that all of the functions return an error type
-    // when given a slice that is too short.
+    // when given a slice that is too short for them.
     macro_rules! short_slice {
         ($name:ident, $read:ident) => (
             mod $name {
@@ -85,6 +110,8 @@ mod tests {
 
     short_slice!(short_u16, read_u16);
     short_slice!(short_i16, read_i16);
+    short_slice!(short_u32, read_u32);
+    short_slice!(short_i32, read_u32);
 
     // A macro to perform generative testing using the following invariant:
     // for any integer N that was transmuted to a stream of bytes read functions must return N.
@@ -145,4 +172,6 @@ mod tests {
 
     read_correctness!(test_u16, u16, 2, read_u16, ::std::u16::MAX);
     read_correctness!(test_i16, i16, 2, read_i16, ::std::i16::MAX);
+    read_correctness!(test_u32, u32, 4, read_u32, ::std::u32::MAX);
+    read_correctness!(test_i32, i32, 4, read_i32, ::std::i32::MAX);
 }
