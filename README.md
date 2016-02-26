@@ -1,5 +1,7 @@
 # rust-endianness
-Rust lib for reading numbers in big-endian and little-endian.
+Library provides functions to read numbers from a stream of bytes either in big-endian or little-endian. 
+
+Functions return Result type instead of panic!().
 
 ## Usage
 
