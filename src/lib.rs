@@ -1,26 +1,61 @@
+/*!
+This crate provides functions to read numbers from a stream of bytes
+either in big-endian or little-endian. Functions return Result type
+instead of panic!.
+
+# Examples
+
+Read signed 16-bit integers:
+```
+use endianness::*;
+
+let v = vec![0, 128, 128, 0];
+assert_eq!(-32768, read_i16(&v[0..2], ByteOrder::LittleEndian).unwrap());
+assert_eq!(-32768, read_i16(&v[2..4], ByteOrder::BigEndian).unwrap());
+```
+
+Read a signed 32-bit integer:
+```
+use endianness::*;
+
+let v = vec![0, 128, 128, 0];
+match read_i32(&v, ByteOrder::LittleEndian) {
+    Ok(n) => println!("Read value {}", n), // 8421376
+    Err(err) => println!("Error: {}", err),
+}
+```
+*/
+
+#![crate_name = "endianness"]
+
+#![deny(missing_docs, missing_debug_implementations,
+        missing_copy_implementations, trivial_casts, trivial_numeric_casts,
+        unsafe_code, unused_extern_crates, unused_import_braces, unused_qualifications)]
+
 use std::fmt;
 use std::error;
 use std::result;
 
-#[derive(Debug)]
+/// The 'ByteOrder' type. It represents the order of bytes in a stream we read from.
+#[derive(Debug, Copy, Clone)]
 pub enum ByteOrder {
-    // Intel byte order
+    /// Intel byte order
     LittleEndian,
-    // Motorola byte order
+    /// Motorola byte order
     BigEndian,
 }
 
-#[derive(Debug,PartialEq)]
+/// The error type.
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Error {
+    /// The stream is too small to read the requested type.
     ShortSlice,
-    Other(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::ShortSlice => write!(f, "The slice length is too short."),
-            Error::Other(ref err_string) => write!(f, "{}", err_string),
         }
     }
 }
@@ -29,19 +64,19 @@ impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ShortSlice => "The slice length is too short.",
-            Error::Other(ref err_string) => err_string,
         }
     }
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             Error::ShortSlice => None,
-            Error::Other(_) => None,
         }
     }
 }
 
+/// Result type alias that fixes Error parameter.
 pub type Result<T> = result::Result<T, Error>;
 
+/// Read unsigned 16-bit integer from a stream of bytes.
 pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
     if data.len() < 2 {
         Err(Error::ShortSlice)
@@ -57,10 +92,12 @@ pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
     }
 }
 
+/// Read signed 16-bit integer from a stream of bytes.
 pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
     Ok( try!(read_u16(data, endianness)) as i16 )
 }
 
+/// Read unsigned 32-bit integer from a stream of bytes.
 pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
     if data.len() < 4 {
         Err(Error::ShortSlice)
@@ -82,10 +119,12 @@ pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
     }
 }
 
+/// Read signed 32-bit integer from a stream of bytes.
 pub fn read_i32(data: &[u8], endianness: ByteOrder) -> Result<i32> {
     Ok( try!(read_u32(data, endianness)) as i32 )
 }
 
+/// Read unsigned 64-bit integer from a stream of bytes.
 pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
     if data.len() < 8 {
         Err(Error::ShortSlice)
@@ -119,11 +158,13 @@ pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
     }
 }
 
+/// Read signed 64-bit integer from a stream of bytes.
 pub fn read_i64(data: &[u8], endianness: ByteOrder) -> Result<i64> {
     Ok( try!(read_u64(data, endianness)) as i64 )
 }
 
 #[cfg(test)]
+#[allow(unsafe_code)]
 mod tests {
     // Macro to test that all of the functions return an error type
     // when given a slice that is too short for them.
@@ -168,36 +209,40 @@ mod tests {
                 fn read_big_endian() {
                     #[cfg(target_endian = "little")]
                     fn prop(n: $ty) -> bool {
-                        let mut data = unsafe { mem::transmute::<_, [u8; $size]>(n as $ty) };
+                        let mut data = unsafe { mem::transmute::<_, [u8; $size]>(n) };
                         data.reverse();
                         n == $read(&data, ByteOrder::BigEndian).unwrap()
                     }
 
                     #[cfg(target_endian = "big")]
                     fn prop(n: $ty) -> bool {
-                        let data = unsafe { mem::transmute::<_, [u8; $size]>(n as $ty) };
+                        let data = unsafe { mem::transmute::<_, [u8; $size]>(n) };
                         n == $read(&data, ByteOrder::BigEndian).unwrap()
                     }
 
-                    self::quick_check(prop as fn($ty) -> bool);
+                    // cast function explicitly to get rid off warns about trivial cast (why?)
+                    let f: fn($ty) -> bool = prop;
+                    quick_check(f);
                 }
 
                 #[test]
                 fn read_little_endian() {
                     #[cfg(target_endian = "little")]
                     fn prop(n: $ty) -> bool {
-                        let data = unsafe { mem::transmute::<_, [u8; $size]>(n as $ty) };
+                        let data = unsafe { mem::transmute::<_, [u8; $size]>(n) };
                         n == $read(&data, ByteOrder::LittleEndian).unwrap()
                     }
 
                     #[cfg(target_endian = "big")]
                     fn prop(n: $ty) -> bool {
-                        let mut data = unsafe { mem::transmute::<_, [u8; $size]>(n as $ty) };
+                        let mut data = unsafe { mem::transmute::<_, [u8; $size]>(n) };
                         data.reverse();
                         n == $read(&data, ByteOrder::LittleEndian).unwrap()
                     }
 
-                    self::quick_check(prop as fn($ty) -> bool);
+                    // cast function explicitly to get rid off warns about trivial cast (why?)
+                    let f: fn($ty) -> bool = prop;
+                    quick_check(f);
                 }
 
                 fn quick_check<T: Testable>(prop: T) {
