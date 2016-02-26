@@ -2,6 +2,11 @@
 name = "endianness"
 version = "0.1.0"
 authors = ["igor.solovyov <igorsolovyov@me.com>"]
+repository = "https://github.com/igorsolovyov/rust-endianness.git"
+homepage = "https://github.com/igorsolovyov/rust-endianness"
+license = "MIT"
+readme = "README.md"
+description = "Rust library for reading numbers in big-endian and little-endian."
 
 [dev-dependencies]
 quickcheck = "0.2"
