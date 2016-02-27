@@ -24,6 +24,14 @@ match read_i32(&v, ByteOrder::LittleEndian) {
     Err(err) => println!("Error: {}", err),
 }
 ```
+
+Read a single-precision floating point number:
+```rust
+use endianness::*;
+
+let v = vec![194, 255, 0, 0];
+assert_eq!(-127.5, read_f32(&v[0..4], ByteOrder::BigEndian).unwrap());
+```
 */
 
 #![crate_name = "endianness"]
