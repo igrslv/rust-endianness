@@ -22,13 +22,17 @@ assert_eq!(-32768, read_i16(&v[2..4], ByteOrder::BigEndian).unwrap());
 Read a signed 32-bit integer:
 
 ```rust
-extern crate endianness;
-use endianness::*;
-
 let v = vec![0, 128, 128, 0];
 
 match read_i32(&v, ByteOrder::LittleEndian) {
     Ok(n) => println!("Read value {}", n), // 8421376
     Err(err) => println!("Error: {}", err),
 }
+```
+
+Read a single-precision floating point number:
+
+```rust
+let v = vec![194, 255, 0, 0];
+assert_eq!(-127.5, read_f32(&v[0..4], ByteOrder::BigEndian).unwrap());
 ```
