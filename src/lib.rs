@@ -6,7 +6,7 @@ instead of panic!.
 # Examples
 
 Read signed 16-bit integers:
-```
+```rust
 use endianness::*;
 
 let v = vec![0, 128, 128, 0];
@@ -15,7 +15,7 @@ assert_eq!(-32768, read_i16(&v[2..4], ByteOrder::BigEndian).unwrap());
 ```
 
 Read a signed 32-bit integer:
-```
+```rust
 use endianness::*;
 
 let v = vec![0, 128, 128, 0];
@@ -30,8 +30,9 @@ match read_i32(&v, ByteOrder::LittleEndian) {
 
 #![deny(missing_docs, missing_debug_implementations,
         missing_copy_implementations, trivial_casts, trivial_numeric_casts,
-        unsafe_code, unused_extern_crates, unused_import_braces, unused_qualifications)]
+        unused_extern_crates, unused_import_braces, unused_qualifications)]
 
+use std::mem;
 use std::fmt;
 use std::error;
 use std::result;
@@ -76,7 +77,7 @@ impl error::Error for Error {
 /// Result type alias that fixes Error parameter.
 pub type Result<T> = result::Result<T, Error>;
 
-/// Read unsigned 16-bit integer from a stream of bytes.
+/// Reads unsigned 16-bit integer from a stream of bytes.
 pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
     if data.len() < 2 {
         Err(Error::ShortSlice)
@@ -92,12 +93,12 @@ pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
     }
 }
 
-/// Read signed 16-bit integer from a stream of bytes.
+/// Reads signed 16-bit integer from a stream of bytes.
 pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
     Ok( try!(read_u16(data, endianness)) as i16 )
 }
 
-/// Read unsigned 32-bit integer from a stream of bytes.
+/// Reads unsigned 32-bit integer from a stream of bytes.
 pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
     if data.len() < 4 {
         Err(Error::ShortSlice)
@@ -119,12 +120,12 @@ pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
     }
 }
 
-/// Read signed 32-bit integer from a stream of bytes.
+/// Reads signed 32-bit integer from a stream of bytes.
 pub fn read_i32(data: &[u8], endianness: ByteOrder) -> Result<i32> {
     Ok( try!(read_u32(data, endianness)) as i32 )
 }
 
-/// Read unsigned 64-bit integer from a stream of bytes.
+/// Reads unsigned 64-bit integer from a stream of bytes.
 pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
     if data.len() < 8 {
         Err(Error::ShortSlice)
@@ -158,9 +159,21 @@ pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
     }
 }
 
-/// Read signed 64-bit integer from a stream of bytes.
+/// Reads signed 64-bit integer from a stream of bytes.
 pub fn read_i64(data: &[u8], endianness: ByteOrder) -> Result<i64> {
     Ok( try!(read_u64(data, endianness)) as i64 )
+}
+
+/// Reads a single-precision floating point number.
+pub fn read_f32(data: &[u8], endianness: ByteOrder) -> Result<f32> {
+    let u = try!(read_u32(data, endianness));
+    Ok( unsafe { mem::transmute(u) } )
+}
+
+/// Reads a double-precision floating point number.
+pub fn read_f64(data: &[u8], endianness: ByteOrder) -> Result<f64> {
+    let u = try!(read_u64(data, endianness));
+    Ok( unsafe { mem::transmute(u) } )
 }
 
 #[cfg(test)]
@@ -186,12 +199,14 @@ mod tests {
         );
     }
 
-    short_slice!(short_u16, read_u16);
-    short_slice!(short_i16, read_i16);
-    short_slice!(short_u32, read_u32);
-    short_slice!(short_i32, read_i32);
-    short_slice!(short_u64, read_u64);
-    short_slice!(short_i64, read_i64);
+    short_slice!(short_slice_u16, read_u16);
+    short_slice!(short_slice_i16, read_i16);
+    short_slice!(short_slice_u32, read_u32);
+    short_slice!(short_slice_i32, read_i32);
+    short_slice!(short_slice_u64, read_u64);
+    short_slice!(short_slice_i64, read_i64);
+    short_slice!(short_slice_f32, read_f32);
+    short_slice!(short_slice_f64, read_f64);
 
     // A macro to perform generative testing using the following invariant:
     // for any integer N that was transmuted to a stream of bytes read functions must return N.
@@ -260,4 +275,6 @@ mod tests {
     read_correctness!(test_i32, i32, 4, read_i32, ::std::i32::MAX);
     read_correctness!(test_u64, u64, 8, read_u64, ::std::u64::MAX);
     read_correctness!(test_i64, i64, 8, read_i64, ::std::i64::MAX);
+    read_correctness!(test_f32, f32, 4, read_f32, ::std::u32::MAX);
+    read_correctness!(test_f64, f64, 8, read_f64, ::std::u64::MAX);
 }
