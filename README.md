@@ -1,7 +1,6 @@
 # rust-endianness
 Library provides functions to read numbers from a stream of bytes either in big-endian or little-endian. 
-
-Functions return Result type instead of panic!().
+Functions return Result type.
 
 [![Build Status](https://travis-ci.org/igorsolovyov/rust-endianness.svg?branch=master)](https://travis-ci.org/igorsolovyov/rust-endianness)
 
