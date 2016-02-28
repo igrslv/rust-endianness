@@ -1,38 +1,37 @@
-/*!
-This crate provides functions to read numbers from a stream of bytes
-either in big-endian or little-endian. Functions return Result type
-instead of panic!.
-
-# Examples
-
-Read signed 16-bit integers:
-```rust
-use endianness::*;
-
-let v = vec![0, 128, 128, 0];
-assert_eq!(-32768, read_i16(&v[0..2], ByteOrder::LittleEndian).unwrap());
-assert_eq!(-32768, read_i16(&v[2..4], ByteOrder::BigEndian).unwrap());
-```
-
-Read a signed 32-bit integer:
-```rust
-use endianness::*;
-
-let v = vec![0, 128, 128, 0];
-match read_i32(&v, ByteOrder::LittleEndian) {
-    Ok(n) => println!("Read value {}", n), // 8421376
-    Err(err) => println!("Error: {}", err),
-}
-```
-
-Read a single-precision floating point number:
-```rust
-use endianness::*;
-
-let v = vec![194, 255, 0, 0];
-assert_eq!(-127.5, read_f32(&v[0..4], ByteOrder::BigEndian).unwrap());
-```
-*/
+//! This crate provides functions to read numbers from a stream of bytes
+//! either in big-endian or little-endian. Functions return Result type
+//! instead of panic!.
+//!
+//! # Examples
+//!
+//! Read signed 16-bit integers:
+//! ```rust
+//! use endianness::*;
+//!
+//! let v = vec![0, 128, 128, 0];
+//! assert_eq!(-32768, read_i16(&v[0..2], ByteOrder::LittleEndian).unwrap());
+//! assert_eq!(-32768, read_i16(&v[2..4], ByteOrder::BigEndian).unwrap());
+//! ```
+//!
+//! Read a signed 32-bit integer:
+//! ```rust
+//! use endianness::*;
+//!
+//! let v = vec![0, 128, 128, 0];
+//! match read_i32(&v, ByteOrder::LittleEndian) {
+//! Ok(n) => println!("Read value {}", n), // 8421376
+//! Err(err) => println!("Error: {}", err),
+//! }
+//! ```
+//!
+//! Read a single-precision floating point number:
+//! ```rust
+//! use endianness::*;
+//!
+//! let v = vec![194, 255, 0, 0];
+//! assert_eq!(-127.5, read_f32(&v[0..4], ByteOrder::BigEndian).unwrap());
+//! ```
+//!
 
 #![crate_name = "endianness"]
 
@@ -91,19 +90,15 @@ pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
         Err(Error::ShortSlice)
     } else {
         match endianness {
-            ByteOrder::BigEndian => {
-                Ok( ((data[0] as u16) << 8) + (data[1] as u16) )
-            }
-            ByteOrder::LittleEndian => {
-                Ok( ((data[1] as u16) << 8) + (data[0] as u16) )
-            }
+            ByteOrder::BigEndian => Ok(((data[0] as u16) << 8) + (data[1] as u16)),
+            ByteOrder::LittleEndian => Ok(((data[1] as u16) << 8) + (data[0] as u16)),
         }
     }
 }
 
 /// Reads signed 16-bit integer from a stream of bytes.
 pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
-    Ok( try!(read_u16(data, endianness)) as i16 )
+    Ok(try!(read_u16(data, endianness)) as i16)
 }
 
 /// Reads unsigned 32-bit integer from a stream of bytes.
@@ -113,16 +108,12 @@ pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
     } else {
         match endianness {
             ByteOrder::BigEndian => {
-                Ok(
-                    ( (data[0] as u32) << 24 ) + ( (data[1] as u32) << 16 ) +
-                    ( (data[2] as u32) << 8 ) + (data[3] as u32)
-                )
+                Ok(((data[0] as u32) << 24) + ((data[1] as u32) << 16) + ((data[2] as u32) << 8) +
+                   (data[3] as u32))
             }
             ByteOrder::LittleEndian => {
-                Ok(
-                    ( (data[3] as u32) << 24 ) + ( (data[2] as u32) << 16 ) +
-                    ( (data[1] as u32) << 8 ) + (data[0] as u32)
-                )
+                Ok(((data[3] as u32) << 24) + ((data[2] as u32) << 16) + ((data[1] as u32) << 8) +
+                   (data[0] as u32))
             }
         }
     }
@@ -130,7 +121,7 @@ pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
 
 /// Reads signed 32-bit integer from a stream of bytes.
 pub fn read_i32(data: &[u8], endianness: ByteOrder) -> Result<i32> {
-    Ok( try!(read_u32(data, endianness)) as i32 )
+    Ok(try!(read_u32(data, endianness)) as i32)
 }
 
 /// Reads unsigned 64-bit integer from a stream of bytes.
@@ -140,28 +131,16 @@ pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
     } else {
         match endianness {
             ByteOrder::BigEndian => {
-                Ok(
-                    ( (data[0] as u64) << 56 ) +
-                    ( (data[1] as u64) << 48 ) +
-                    ( (data[2] as u64) << 40 ) +
-                    ( (data[3] as u64) << 32 ) +
-                    ( (data[4] as u64) << 24 ) +
-                    ( (data[5] as u64) << 16 ) +
-                    ( (data[6] as u64) << 8 ) +
-                    (data[7] as u64)
-                )
+                Ok(((data[0] as u64) << 56) + ((data[1] as u64) << 48) +
+                   ((data[2] as u64) << 40) + ((data[3] as u64) << 32) +
+                   ((data[4] as u64) << 24) + ((data[5] as u64) << 16) +
+                   ((data[6] as u64) << 8) + (data[7] as u64))
             }
             ByteOrder::LittleEndian => {
-                Ok(
-                    ( (data[7] as u64) << 56 ) +
-                    ( (data[6] as u64) << 48 ) +
-                    ( (data[5] as u64) << 40 ) +
-                    ( (data[4] as u64) << 32 ) +
-                    ( (data[3] as u64) << 24 ) +
-                    ( (data[2] as u64) << 16 ) +
-                    ( (data[1] as u64) << 8 ) +
-                    (data[0] as u64)
-                )
+                Ok(((data[7] as u64) << 56) + ((data[6] as u64) << 48) +
+                   ((data[5] as u64) << 40) + ((data[4] as u64) << 32) +
+                   ((data[3] as u64) << 24) + ((data[2] as u64) << 16) +
+                   ((data[1] as u64) << 8) + (data[0] as u64))
             }
         }
     }
@@ -169,19 +148,19 @@ pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
 
 /// Reads signed 64-bit integer from a stream of bytes.
 pub fn read_i64(data: &[u8], endianness: ByteOrder) -> Result<i64> {
-    Ok( try!(read_u64(data, endianness)) as i64 )
+    Ok(try!(read_u64(data, endianness)) as i64)
 }
 
 /// Reads a single-precision floating point number.
 pub fn read_f32(data: &[u8], endianness: ByteOrder) -> Result<f32> {
     let u = try!(read_u32(data, endianness));
-    Ok( unsafe { mem::transmute(u) } )
+    Ok(unsafe { mem::transmute(u) })
 }
 
 /// Reads a double-precision floating point number.
 pub fn read_f64(data: &[u8], endianness: ByteOrder) -> Result<f64> {
     let u = try!(read_u64(data, endianness));
-    Ok( unsafe { mem::transmute(u) } )
+    Ok(unsafe { mem::transmute(u) })
 }
 
 #[cfg(test)]
