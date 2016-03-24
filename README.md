@@ -1,5 +1,5 @@
 # rust-endianness
-Library provides functions to read numbers from a stream of bytes either in big-endian or little-endian. 
+Library provides functions to read numbers from a stream of bytes either in big-endian or little-endian.
 Functions return Result type.
 
 [![Build Status](https://travis-ci.org/igrslv/rust-endianness.svg?branch=master)](https://travis-ci.org/igrslv/rust-endianness)
@@ -10,7 +10,7 @@ Add the package to your Cargo.toml:
 
 ```toml
 [dependencies]
-endianness = "0.1"
+endianness = "0.2"
 ```
 and then import it:
 
