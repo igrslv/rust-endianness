@@ -42,7 +42,6 @@
 use std::mem;
 use std::fmt;
 use std::error;
-use std::result;
 
 /// The 'ByteOrder' type. It represents the order of bytes in a stream we read from.
 #[derive(Debug, Copy, Clone)]
@@ -55,39 +54,39 @@ pub enum ByteOrder {
 
 /// The error type.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Error {
+pub enum EndiannessError {
     /// The stream is too small to read the requested type.
     ShortSlice,
 }
 
-impl fmt::Display for Error {
+impl fmt::Display for EndiannessError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::ShortSlice => write!(f, "The slice length is too short."),
+            EndiannessError::ShortSlice => write!(f, "The slice length is too short."),
         }
     }
 }
 
-impl error::Error for Error {
+impl error::Error for EndiannessError {
     fn description(&self) -> &str {
         match *self {
-            Error::ShortSlice => "The slice length is too short.",
+            EndiannessError::ShortSlice => "The slice length is too short.",
         }
     }
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            Error::ShortSlice => None,
+            EndiannessError::ShortSlice => None,
         }
     }
 }
 
 /// Result type alias that fixes Error parameter.
-pub type Result<T> = result::Result<T, Error>;
+pub type EndiannessResult<T> = Result<T, EndiannessError>;
 
 /// Reads unsigned 16-bit integer from a stream of bytes.
-pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
+pub fn read_u16(data: &[u8], endianness: ByteOrder) -> EndiannessResult<u16> {
     if data.len() < 2 {
-        Err(Error::ShortSlice)
+        Err(EndiannessError::ShortSlice)
     } else {
         match endianness {
             ByteOrder::BigEndian => Ok(((data[0] as u16) << 8) + (data[1] as u16)),
@@ -97,14 +96,14 @@ pub fn read_u16(data: &[u8], endianness: ByteOrder) -> Result<u16> {
 }
 
 /// Reads signed 16-bit integer from a stream of bytes.
-pub fn read_i16(data: &[u8], endianness: ByteOrder) -> Result<i16> {
+pub fn read_i16(data: &[u8], endianness: ByteOrder) -> EndiannessResult<i16> {
     Ok(try!(read_u16(data, endianness)) as i16)
 }
 
 /// Reads unsigned 32-bit integer from a stream of bytes.
-pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
+pub fn read_u32(data: &[u8], endianness: ByteOrder) -> EndiannessResult<u32> {
     if data.len() < 4 {
-        Err(Error::ShortSlice)
+        Err(EndiannessError::ShortSlice)
     } else {
         match endianness {
             ByteOrder::BigEndian => {
@@ -120,14 +119,14 @@ pub fn read_u32(data: &[u8], endianness: ByteOrder) -> Result<u32> {
 }
 
 /// Reads signed 32-bit integer from a stream of bytes.
-pub fn read_i32(data: &[u8], endianness: ByteOrder) -> Result<i32> {
+pub fn read_i32(data: &[u8], endianness: ByteOrder) -> EndiannessResult<i32> {
     Ok(try!(read_u32(data, endianness)) as i32)
 }
 
 /// Reads unsigned 64-bit integer from a stream of bytes.
-pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
+pub fn read_u64(data: &[u8], endianness: ByteOrder) -> EndiannessResult<u64> {
     if data.len() < 8 {
-        Err(Error::ShortSlice)
+        Err(EndiannessError::ShortSlice)
     } else {
         match endianness {
             ByteOrder::BigEndian => {
@@ -147,18 +146,18 @@ pub fn read_u64(data: &[u8], endianness: ByteOrder) -> Result<u64> {
 }
 
 /// Reads signed 64-bit integer from a stream of bytes.
-pub fn read_i64(data: &[u8], endianness: ByteOrder) -> Result<i64> {
+pub fn read_i64(data: &[u8], endianness: ByteOrder) -> EndiannessResult<i64> {
     Ok(try!(read_u64(data, endianness)) as i64)
 }
 
 /// Reads a single-precision floating point number.
-pub fn read_f32(data: &[u8], endianness: ByteOrder) -> Result<f32> {
+pub fn read_f32(data: &[u8], endianness: ByteOrder) -> EndiannessResult<f32> {
     let u = try!(read_u32(data, endianness));
     Ok(unsafe { mem::transmute(u) })
 }
 
 /// Reads a double-precision floating point number.
-pub fn read_f64(data: &[u8], endianness: ByteOrder) -> Result<f64> {
+pub fn read_f64(data: &[u8], endianness: ByteOrder) -> EndiannessResult<f64> {
     let u = try!(read_u64(data, endianness));
     Ok(unsafe { mem::transmute(u) })
 }
@@ -171,16 +170,16 @@ mod tests {
     macro_rules! short_slice {
         ($name:ident, $read:ident) => (
             mod $name {
-                use {ByteOrder, Error, $read};
+                use {ByteOrder, EndiannessError, $read};
 
                 #[test]
                 fn read_big_endian() {
-                    assert_eq!(Error::ShortSlice, $read(&[], ByteOrder::BigEndian).unwrap_err());
+                    assert_eq!(EndiannessError::ShortSlice, $read(&[], ByteOrder::BigEndian).unwrap_err());
                 }
 
                 #[test]
                 fn read_little_endian() {
-                    assert_eq!(Error::ShortSlice, $read(&[], ByteOrder::LittleEndian).unwrap_err());
+                    assert_eq!(EndiannessError::ShortSlice, $read(&[], ByteOrder::LittleEndian).unwrap_err());
                 }
             }
         );
