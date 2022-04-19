@@ -3,7 +3,7 @@ Library provides functions to read numbers from a stream of bytes either in big-
 Functions return Result type.
 
 [![Build Status](https://travis-ci.org/igrslv/rust-endianness.svg?branch=master)](https://travis-ci.org/igrslv/rust-endianness)
-[![](http://meritbadge.herokuapp.com/endianness)](https://crates.io/crates/endianness)
+[![](https://img.shields.io/crates/v/endianness)](https://crates.io/crates/endianness)
 
 ## Installation
 Add the package to your Cargo.toml:
